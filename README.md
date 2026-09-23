@@ -48,7 +48,7 @@ Paraméterek: `php-version` (alap: 8.2), `required-files` (alap: üres, ilyenkor
    ```bash
    gh repo edit webprog-2026/wp-hf02-<tema> --template
    ```
-7. **Classroom:** új assignment, a sablon ez a repó legyen, autograding nem kell (a workflow elvégzi).
+7. **Kiosztás** a hallgatóknak (lásd a következő szakaszt).
 
 ### Tesztírás – rövid útmutató
 
@@ -74,6 +74,28 @@ A `tests/lib/check.php` a következőket adja:
 - **Mindig futtasd le a referencia-megoldáson**, mielőtt kiadod.
 
 ---
+
+## Kiosztás a hallgatóknak
+
+A GitHub Classroom 2026. augusztus 28-án megszűnt, ezért a repók szétosztását az `oktato/assign.sh` végzi.
+
+Névsorfájl (soronként egy GitHub felhasználónév, a `#` utáni rész megjegyzés):
+
+```
+# nevsor.txt
+kissp            # Kiss Péter
+nagyanna
+```
+
+Kiosztás:
+
+```bash
+./oktato/assign.sh wp-hf01-php-alapok wp-hf01 nevsor.txt
+```
+
+Minden hallgatónak létrejön a `wp-hf01-<githubnev>` privát repó a sablonból, és meghívót kap rá **push** joggal (nem admin, tehát nem tudja törölni a repót és nem tudja kikapcsolni az Actions-t). A szkript újrafuttatható: a meglévő repókat kihagyja, így később csatlakozó hallgatóval is működik.
+
+A névsort a hallgatóktól kell összegyűjtened (GitHub felhasználónév), például az első órán egy megosztott táblázatban.
 
 ## Beadások áttekintése
 
