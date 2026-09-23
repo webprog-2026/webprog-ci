@@ -97,6 +97,22 @@ Minden hallgatónak létrejön a `wp-hf01-<githubnev>` privát repó a sablonbó
 
 A névsort a hallgatóktól kell összegyűjtened (GitHub felhasználónév), például az első órán egy megosztott táblázatban.
 
+## Jogosultságok
+
+A szervezetben az alapértelmezett tagsági jog **none**, tehát a hallgatók maguktól semmit nem látnak. Ez azért fontos, mert a `*-referencia` repókban a kész megoldások vannak.
+
+A sablonokat a **`hallgatok`** csapat olvashatja — enélkül nem tudnának belőlük repót létrehozni. Aki most fogadja el a meghívót, azt a csapatba be kell léptetni:
+
+```bash
+ORG=webprog-2026 ./oktato/csapat.sh
+```
+
+Újrafuttatható, aki már bent van, azt kihagyja. Új sablon repónál ne feledd megadni a csapat olvasási jogát:
+
+```bash
+gh api -X PUT orgs/webprog-2026/teams/hallgatok/repos/webprog-2026/<sablon> -f permission=pull
+```
+
 ## Beadások áttekintése
 
 ```bash
