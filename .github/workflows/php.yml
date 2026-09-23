@@ -1,0 +1,100 @@
+name: PHP ellenőrzés
+
+# Újrahasznosítható workflow. A hallgatói repókban csak egy pár soros fájl hívja meg,
+# az összes lépés itt van. Ha itt javítunk valamit, az azonnal érvényes mindenkinél.
+
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        description: 'Használt PHP verzió'
+        type: string
+        default: '8.2'
+      required-files:
+        description: 'Kötelező fájlok, szóközzel elválasztva (pl. "profile.php types.php")'
+        type: string
+        default: ''
+      tests-dir:
+        description: 'A tesztfájlok mappája'
+        type: string
+        default: 'tests'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kód letöltése
+        uses: actions/checkout@v4
+
+      - name: PHP telepítése
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: mbstring, xml
+          coverage: none
+
+      - name: Kötelező fájlok
+        if: inputs.required-files != ''
+        run: |
+          missing=0
+          for f in ${{ inputs.required-files }}; do
+            if [ -f "$f" ]; then
+              echo "OK   $f"
+            else
+              echo "HIBA $f hiányzik"
+              echo "::error file=$f::Hiányzó fájl: $f"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Szintaxis-ellenőrzés
+        run: |
+          errors=0
+          while IFS= read -r f; do
+            if out=$(php -l "$f" 2>&1); then
+              echo "OK   $f"
+            else
+              echo "$out"
+              echo "::error file=$f::PHP szintaxishiba"
+              errors=1
+            fi
+          done < <(find . -name '*.php' -not -path './vendor/*' -not -path './${{ inputs.tests-dir }}/*')
+          exit $errors
+
+      - name: Tesztek futtatása
+        id: tests
+        run: |
+          dir="${{ inputs.tests-dir }}"
+          if [ ! -d "$dir" ]; then
+            echo "Nincs \`$dir\` mappa, tesztek kihagyva." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "## Teszteredmények" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          failed=0
+          for t in "$dir"/test_*.php; do
+            [ -f "$t" ] || continue
+            name=$(basename "$t" .php)
+            echo "::group::$name"
+            if output=$(php "$t" 2>&1); then
+              echo "$output"
+              echo "- ✅ **$name**" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "$output"
+              echo "- ❌ **$name**" >> "$GITHUB_STEP_SUMMARY"
+              echo "$output" | grep -E '^\s*(HIBA|FIGYELEM)' | sed 's/^/    - /' >> "$GITHUB_STEP_SUMMARY"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ $failed -eq 0 ]; then
+            echo "Minden teszt sikeres." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Van sikertelen teszt. A részletek a fenti naplóban, teszt szerint csoportosítva." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit $failed
