@@ -22,6 +22,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # Végtelen ciklus esetén se fusson órákig (és ne fogyassza a perckeretet).
+    timeout-minutes: 10
     steps:
       - name: Kód letöltése
         uses: actions/checkout@v4
