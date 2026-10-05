@@ -6,7 +6,7 @@
 #
 # Az elvárt név: <elotag>-<githubfelhasznalonev>
 #
-# A szkript a szervezet összes repóját végignézi, és kihagyja a sajátjainkat
+# A szkript csak az adott előtagú repókat nézi (pl. wp-hf02-...), és kihagyja a sajátjainkat
 # (sablonok, referenciák, ci). Ami marad, az hallgatói munka: ezeknél
 # megnézi, hogy a név a készítő felhasználónevével végződik-e.
 #
@@ -25,7 +25,7 @@ if [ -z "$PREFIX" ]; then
 fi
 
 # A sajat repoink, ezeket kihagyjuk
-SAJAT='(-referencia$|^webprog-ci$|^mobilprog-ci$|-php-alapok$|-alapmuveletek$|-pontszamlalo$)'
+SAJAT='(-referencia$|^webprog-ci$|^mobilprog-ci$|-php-alapok$|-alapmuveletek$|-pontszamlalo$|-fuggvenyek-tombok$)'
 
 hibas=0
 rendben=0
@@ -36,7 +36,7 @@ while IFS=$'\t' read -r repo owner; do
 
   # A repo keszitoje: az elso admin jogu tag, aki nem a szervezet tulajdonosa
   keszito=$(gh api "repos/$ORG/$repo/collaborators?affiliation=direct" \
-              --jq '[.[] | select(.permissions.admin) | .login] | first' 2>/dev/null)
+              --jq '[.[] | select(.login != "pallaszlo") | .login] | first' 2>/dev/null)
 
   elvart="$PREFIX-$keszito"
 
@@ -61,7 +61,7 @@ while IFS=$'\t' read -r repo owner; do
       echo "        HIBA: az átnevezés nem sikerült"
     fi
   fi
-done < <(gh repo list "$ORG" --limit 500 --json name,owner --jq '.[] | [.name, .owner.login] | @tsv')
+done < <(gh repo list "$ORG" --limit 500 --json name,owner --jq ".[] | select(.name | startswith(\"$PREFIX-\")) | [.name, .owner.login] | @tsv")
 
 echo
 echo "Rendben: $rendben, eltérő: $hibas"

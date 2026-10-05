@@ -18,7 +18,7 @@ PREFIX="${1:-}"
 FORMAT="${2:-table}"
 
 # A sajat repoink, ezek nem beadasok
-SAJAT='(-referencia$|^webprog-ci$|^mobilprog-ci$|-php-alapok$|-alapmuveletek$|-pontszamlalo$)'
+SAJAT='(-referencia$|^webprog-ci$|^mobilprog-ci$|-php-alapok$|-alapmuveletek$|-pontszamlalo$|-fuggvenyek-tombok$)'
 
 if [ -z "$PREFIX" ]; then
   echo "Használat: ORG=<szervezet> $0 <repó-előtag> [csv]" >&2
@@ -44,7 +44,7 @@ while IFS= read -r repo; do
 
   # A keszito (a repot letrehozo hallgato)
   hallgato=$(gh api "repos/$ORG/$repo/collaborators?affiliation=direct" \
-               --jq '[.[] | select(.permissions.admin and .login != "pallaszlo") | .login] | first // "-"' 2>/dev/null)
+               --jq '[.[] | select(.login != "pallaszlo") | .login] | first // "-"' 2>/dev/null)
   [ -z "$hallgato" ] || [ "$hallgato" = "null" ] && hallgato="-"
 
   # Utolso commit es a commitok szama
@@ -64,6 +64,11 @@ print(d[0]['commit']['author']['date'][:16].replace('T',' ') if d else '-')
     db=$(echo "$commits" | python -c "import json,sys; print(len(json.load(sys.stdin)))" 2>/dev/null)
     [ -z "$last" ] && last="-"
     [ -z "$db" ] && db=0
+    msg=$(echo "$commits" | python -c "
+import json,sys
+d=json.load(sys.stdin)
+print(d[0]['commit']['message'].split('\n')[0] if d else '')
+" 2>/dev/null)
 
     run=$(gh run list -R "$ORG/$repo" --limit 1 --json conclusion,status \
             --jq '.[0] | if .status != "completed" then "fut" else (.conclusion // "-") end' 2>/dev/null)
@@ -75,6 +80,12 @@ print(d[0]['commit']['author']['date'][:16].replace('T',' ') if d else '-')
       fut)     mark="FUT   " ;;
       *)       mark="?     " ;;
     esac
+  fi
+
+  # Csak a sablonból kapott kezdő commit van benne: a hallgató még nem kezdett hozzá
+  if [ "$db" = "1" ] && [ "${msg:-}" = "Initial commit" ]; then
+    mark="ÜRES  "
+    run="ures"
   fi
 
   url="https://github.com/$ORG/$repo"
